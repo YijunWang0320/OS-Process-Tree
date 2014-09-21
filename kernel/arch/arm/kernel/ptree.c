@@ -4,5 +4,5 @@
 asmlinkage long ptree(struct prinfo *buf, int *nr)
 {
 	printk("successful print!~");
-	return 0;
+	return 123;
 }
