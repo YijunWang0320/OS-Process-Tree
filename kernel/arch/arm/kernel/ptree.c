@@ -1,8 +1,8 @@
 #include <linux/syscalls.h>
 #include <linux/kernel.h>
 
-asmlinkage long ptree(struct prinfo *buf, int *nr)
+asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 {
 	printk("successful print!~");
-	return 0;
+	return 123;
 }

@@ -131,9 +131,3 @@ asmlinkage long sys_arm_fadvise64_64(int fd, int advice,
 {
 	return sys_fadvise64_64(fd, offset, len, advice);
 }
-
-asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
-{
-	printk("Congrat, your new sys call ptree been called!");
-	return 0;
-}
