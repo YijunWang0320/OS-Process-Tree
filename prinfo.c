@@ -5,17 +5,8 @@
 #include <stdio.h>
 
 int main(int argc, char **argv) {
-<<<<<<< HEAD
-	printf("hello world!!\n");
 	long t;
 	t = syscall(223,NULL,NULL);
-	
-	printf("%ld syscall end!!\n",t);	
-=======
-	long t;
-	printf("begin\n");
-	t = syscall(223, NULL, NULL);	
-	printf("%ld,end\n",t);
->>>>>>> a25e985fae8ee4eb0ad58de75e02563c5fd8c233
+	printf("num of processes: %ld\n", t);
 	return 0;
 }
