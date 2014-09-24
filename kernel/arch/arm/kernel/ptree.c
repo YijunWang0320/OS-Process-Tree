@@ -28,6 +28,6 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 			ch = p->children;
 			sib = p->sibling;
 		}
-	} while (p != &init_task)
+	} while (p != &init_task);
 	return i;
 }
