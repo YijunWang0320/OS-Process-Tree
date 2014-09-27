@@ -4,14 +4,18 @@
 #include <linux/init_task.h>
 #include <linux/list.h>
 #include <linux/string.h>
-
+#include <linux/uaccess.h>
+void doCopy(struct prinfo *tempBuf,struct task_struct *p,struct task_struct *par,int i)
+{
+	
+}
 asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 {
 	long i = 0;
 	long zero=0;
 	long size=sizeof(struct prinfo);
 	int tempNr=0;
-	copy_form_user(&tempNr,nr,sizeof(int));
+	copy_from_user(&tempNr,nr,sizeof(int));
 	struct prinfo *tempBuf=(struct prinfo*)kmalloc(size*tempNr,GFP_KERNEL);
 	copy_from_user(tempBuf,buf,tempNr);
 
@@ -26,15 +30,7 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 
 	do {
 		if (p == par) {
-			memcpy(&tempBuf[i]->pid,p->pid,sizeof(p->pid));
-			memcpy(&tempBuf[i]->parent_pid,p->parent->pid,sizeof(p->parent->pid);
-			memcpy(&tempBuf[i]->first_child_pid,p->children.next->pid,sizeof(p->children.next->pid));
-			if(p->sibling.next=par->children)
-				memcpy(tempBuf[i]->next_sibling_pid,&zero,sizeof(long));
-			else
-				tempBuf[i]->next_sibling_pid=p->sibling.next->pid;
-			tempBuf[i]->state=p->state;
-			
+			doCopy(tempBuf,p,par,i);
 			i ++;
 			printk("[%d] %s, parent:%s\n", p->pid, p->comm, p->parent->comm);
 			par = p->parent;
