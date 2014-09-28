@@ -5,7 +5,7 @@
 #include <linux/list.h>
 #include <linux/string.h>
 #include <linux/uaccess.h>
-void doCopy(struct prinfo *tempBuf,struct task_struct *p,struct task_struct *par,int i)
+void doCopy(struct prinfo *tempBuf,struct task_struct *p,struct task_struct *par,struct task_struct *sib,int i)
 {
 	tempBuf[i].pid=p->pid;
 	if(p->parent->pid!=p->pid)
@@ -15,7 +15,16 @@ void doCopy(struct prinfo *tempBuf,struct task_struct *p,struct task_struct *par
 	if(list_empty(&p->children))
 		tempBuf[i].first_child_pid=0;
 	else
-		memcpy(&tempBuf[i].first_child_pid,list_entry(p->children.next,struct task_struct,sibling),sizeof(tempBuf[i].first_child_pid));
+		tempBuf[i].first_child_pid=list_entry(p->children.next,struct task_struct,sibling)->pid;
+	tempBuf[i].state=p->state;
+	if(p->sibling.next==par->children)
+		tempBuf[i].next_sibling_pid=0;
+	else
+		tempBuf[i].next_sibling_pid=sib->pid;
+	tempBuf[i].uid=p->real_cred.uid;
+	strcpy(&tempBuf[i].comm,&p->comm);
+	return;
+
 }
 asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 {
@@ -26,7 +35,7 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 	int tempNr=0;
 	copy_from_user(&tempNr,nr,sizeof(int));
         struct prinfo *tempBuf=(struct prinfo*)kmalloc(size*tempNr,GFP_KERNEL);
-	copy_from_user(tempBuf,buf,tempNr);
+	copy_from_user(tempBuf,buf,tempNr*sizeof(struct prinfo));
 
 	read_lock(&tasklist_lock);
 	struct task_struct *par = &init_task;
@@ -39,7 +48,7 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 
 	do {
 		if (p == par) {
-			doCopy(tempBuf,p,par,i);
+			doCopy(tempBuf,p,par,sib,i);
 			i ++;
 			printk("[%d] %s, parent:%s\n", p->pid, p->comm, p->parent->comm);
 			par = p->parent;
@@ -50,7 +59,7 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 			ch = &p->children;
 			sib = &p->sibling;
 		} else if (list_empty(ch)) {
-			doCopy(tempBuf,p,par,i);
+			doCopy(tempBuf,p,par,sib,i);
 			i ++;
 			printk("[%d] %s, parent:%s\n", p->pid, p->comm, p->parent->comm);
 			if (&par->children == p->sibling.next)
