@@ -1,4 +1,4 @@
-d#include <linux/syscalls.h>
+#include <linux/syscalls.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/init_task.h>
@@ -15,7 +15,7 @@ void doCopy(struct prinfo *tempBuf,struct task_struct *p,struct task_struct *par
 	if(list_empty(&p->children))
 		tempBuf[i].first_child_pid=0;
 	else
-		tempBuf[i].first_child_pid=p->children.pid;
+		tempBuf[i].first_child_pid=list_entry(p->children.next,struct task_struct,sibling);
 }
 asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 {
