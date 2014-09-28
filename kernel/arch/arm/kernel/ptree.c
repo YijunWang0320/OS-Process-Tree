@@ -3,10 +3,41 @@
 #include <linux/sched.h>
 #include <linux/init_task.h>
 #include <linux/list.h>
+#include <linux/string.h>
+#include <linux/uaccess.h>
+void doCopy(struct prinfo *tempBuf,struct task_struct *p,struct task_struct *par,struct task_struct *sib,int i)
+{
+	tempBuf[i].pid=p->pid;
+	if(p->parent->pid!=p->pid)
+		tempBuf[i].parent_pid=par->pid;
+	else
+		tempBuf[i].parent_pid=0;
+	if(list_empty(&p->children))
+		tempBuf[i].first_child_pid=0;
+	else
+		tempBuf[i].first_child_pid=list_entry(p->children.next,struct task_struct,sibling)->pid;
+	tempBuf[i].state=p->state;
+	if(p->sibling.next==&par->children)
+		tempBuf[i].next_sibling_pid=0;
+	else
+		tempBuf[i].next_sibling_pid=sib->pid;
+	tempBuf[i].uid=p->real_cred->uid;
+	strcpy(&tempBuf[i].comm,&p->comm);
+	return;
 
+}
 asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 {
 	long i = 0;
+	long zero=0;
+	int returnVal=10;
+	long size=sizeof(struct prinfo);
+	int tempNr=0;
+	copy_from_user(&tempNr,nr,sizeof(int));
+        struct prinfo *tempBuf=(struct prinfo*)kmalloc(size*tempNr,GFP_KERNEL);
+	copy_from_user(tempBuf,buf,tempNr*sizeof(struct prinfo));
+
+	read_lock(&tasklist_lock);
 	struct task_struct *par = &init_task;
 	struct task_struct *root = par;
 	struct list_head *firstch = &par->children;
@@ -17,6 +48,7 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 
 	do {
 		if (p == par) {
+			doCopy(tempBuf,p,par,list_entry(sib->next,struct task_struct,sibling),i);
 			i ++;
 			printk("[%d] %s, parent:%s\n", p->pid, p->comm, p->parent->comm);
 			par = p->parent;
@@ -27,6 +59,7 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 			ch = &p->children;
 			sib = &p->sibling;
 		} else if (list_empty(ch)) {
+			doCopy(tempBuf,p,par,list_entry(sib,struct task_struct,sibling),i);
 			i ++;
 			printk("[%d] %s, parent:%s\n", p->pid, p->comm, p->parent->comm);
 			if (&par->children == p->sibling.next)
@@ -42,5 +75,7 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 			sib = &p->sibling;
 		}
 	} while (p != root);	
+	read_unlock(&tasklist_lock);
+	copy_to_user(buf,tempBuf,i*sizeof(struct prinfo));
 	return i;
 }
