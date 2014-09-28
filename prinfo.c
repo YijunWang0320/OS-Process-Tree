@@ -1,10 +1,10 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/syscall.h>
-#include <stdio.h>
 #include <memory.h>
-#include <prinfo.h>
+#include "prinfo.h"
 
 int main(int argc, char **argv) {
 	long t;
@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
 	t = syscall(223,userPrinfo,&nr);
 	for(i=0;i<nr;i++)
 	{
-		print("%ld\n",userPrinfo[i].pid);
+		printf("%ld\n",userPrinfo[i].pid);
 	}
 	printf("num of processes: %ld\n", t);
 	return 0;

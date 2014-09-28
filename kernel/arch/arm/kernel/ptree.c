@@ -9,7 +9,7 @@ void doCopy(struct prinfo *tempBuf,struct task_struct *p,struct task_struct *par
 {
 	tempBuf[i].pid=p->pid;
 	if(p->parent->pid!=p->pid)
-		tempBuf[i].parent_pid=p->parent->pid;
+		tempBuf[i].parent_pid=par->pid;
 	else
 		tempBuf[i].parent_pid=0;
 	if(list_empty(&p->children))
@@ -21,10 +21,11 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 {
 	long i = 0;
 	long zero=0;
+	int returnVal=10;
 	long size=sizeof(struct prinfo);
 	int tempNr=0;
 	copy_from_user(&tempNr,nr,sizeof(int));
-	struct prinfo *tempBuf=(struct prinfo*)kmalloc(size*tempNr,GFP_KERNEL);
+        struct prinfo *tempBuf=(struct prinfo*)kmalloc(size*tempNr,GFP_KERNEL);
 	copy_from_user(tempBuf,buf,tempNr);
 
 	read_lock(&tasklist_lock);
@@ -66,5 +67,8 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 		}
 	} while (p != root);	
 	read_unlock(&tasklist_lock);
+        returnVal = copy_to_user(buf,tempBuf,i);
+	for(returnVal=0;returnVal<tempNr;returnVal++)
+		printk("%ld",buf[returnVal].pid);
 	return i;
 }
