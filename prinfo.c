@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
 	int nr=100;
 	userPrinfo=(struct prinfo*)malloc(sizeof(struct prinfo)*nr);
 	t = syscall(223,userPrinfo,&nr);
-	for(i=0;i<nr;i++)
+	for(i=0;i<t;i++)
 	{
 		printf("%ld\n",userPrinfo[i].pid);
 	}

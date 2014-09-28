@@ -15,7 +15,7 @@ void doCopy(struct prinfo *tempBuf,struct task_struct *p,struct task_struct *par
 	if(list_empty(&p->children))
 		tempBuf[i].first_child_pid=0;
 	else
-		tempBuf[i].first_child_pid=list_entry(p->children.next,struct task_struct,sibling);
+		memcpy(&tempBuf[i].first_child_pid,list_entry(p->children.next,struct task_struct,sibling),sizeof(tempBuf[i].first_child_pid));
 }
 asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 {
@@ -67,8 +67,6 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 		}
 	} while (p != root);	
 	read_unlock(&tasklist_lock);
-        returnVal = copy_to_user(buf,tempBuf,i);
-	for(returnVal=0;returnVal<tempNr;returnVal++)
-		printk("%ld",buf[returnVal].pid);
+	copy_to_user(buf,tempBuf,(i+1)*sizeof(struct prinfo));
 	return i;
 }
