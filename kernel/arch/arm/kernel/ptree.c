@@ -5,10 +5,34 @@
 #include <linux/list.h>
 #include <linux/string.h>
 #include <linux/uaccess.h>
-void doCopy(struct prinfo *tempBuf,struct task_struct *p,struct task_struct *par,struct task_struct *sib,int i)
+
+void doCopy(struct prinfo *tempBuf, struct task_struct *p, struct task_struct *par, int i)
 {
-	tempBuf[i].pid=p->pid;
-	if(p->parent->pid!=p->pid)
+	tempBuf[i].pid = p->pid;
+	tempBuf[i].parent_pid = p->parent->pid;
+	tempBuf[i].state = p->state;
+	strcpy(tempBuf[i].comm, p->comm);
+	tempBuf[i].uid = p->real->real_cred->uid;
+	if( p == par) {
+		struct task_struct *chp, *realp;
+
+		realp = p->parent;
+		chp = list_entry(p->children.next, struct task_struct, sibling);
+		tempBuf[i].first_child_pid = chp->pid;
+
+		if (&realp->children == p->sibling.next)
+			tempBuf[i].next_sibling_pid = 0;
+		else
+			tempBuf[i].next_sibling_pid = p->sibling.next->pid;
+	} else if (list_empty(&p->children)) {
+		tempBuf[i].first_child_pid = 0;
+		if (&par->children == p->sibling.next)
+			tempBuf[i].next_sibling_pid = 0;
+		else
+			tempBuf[i].next_sibling_pid = p->sibling.next->pid;
+	}
+	/*tempBuf[i].pid = p->pid;
+	if(p->parent->pid != p->pid)
 		tempBuf[i].parent_pid=par->pid;
 	else
 		tempBuf[i].parent_pid=0;
@@ -24,8 +48,9 @@ void doCopy(struct prinfo *tempBuf,struct task_struct *p,struct task_struct *par
 	tempBuf[i].uid=p->real_cred->uid;
 	strcpy(&tempBuf[i].comm,&p->comm);
 	return;
-
+	*/
 }
+
 asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 {
 	long i = 0;
