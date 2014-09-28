@@ -17,11 +17,11 @@ void doCopy(struct prinfo *tempBuf,struct task_struct *p,struct task_struct *par
 	else
 		tempBuf[i].first_child_pid=list_entry(p->children.next,struct task_struct,sibling)->pid;
 	tempBuf[i].state=p->state;
-	if(p->sibling.next==par->children)
+	if(p->sibling.next==&par->children)
 		tempBuf[i].next_sibling_pid=0;
 	else
 		tempBuf[i].next_sibling_pid=sib->pid;
-	tempBuf[i].uid=p->real_cred.uid;
+	tempBuf[i].uid=p->real_cred->uid;
 	strcpy(&tempBuf[i].comm,&p->comm);
 	return;
 
@@ -48,7 +48,7 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 
 	do {
 		if (p == par) {
-			doCopy(tempBuf,p,par,sib,i);
+			doCopy(tempBuf,p,par,list_entry(sib->next,struct task_struct,sibling),i);
 			i ++;
 			printk("[%d] %s, parent:%s\n", p->pid, p->comm, p->parent->comm);
 			par = p->parent;
@@ -59,7 +59,7 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 			ch = &p->children;
 			sib = &p->sibling;
 		} else if (list_empty(ch)) {
-			doCopy(tempBuf,p,par,sib,i);
+			doCopy(tempBuf,p,par,list_entry(sib,struct task_struct,sibling),i);
 			i ++;
 			printk("[%d] %s, parent:%s\n", p->pid, p->comm, p->parent->comm);
 			if (&par->children == p->sibling.next)
@@ -76,6 +76,6 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 		}
 	} while (p != root);	
 	read_unlock(&tasklist_lock);
-	copy_to_user(buf,tempBuf,(i+1)*sizeof(struct prinfo));
+	copy_to_user(buf,tempBuf,i*sizeof(struct prinfo));
 	return i;
 }

@@ -15,7 +15,14 @@ int main(int argc, char **argv) {
 	t = syscall(223,userPrinfo,&nr);
 	for(i=0;i<t;i++)
 	{
-		printf("%ld\n",userPrinfo[i].pid);
+		printf("pid:%ld  ",userPrinfo[i].pid);
+		printf("par:%ld:  ",userPrinfo[i].parent_pid);
+		printf("fir:%ld:  \n",userPrinfo[i].first_child_pid);
+		printf("nex:%ld:  ",userPrinfo[i].next_sibling_pid);
+		printf("state:%ld:  ",userPrinfo[i].state);
+		printf("uid:%ld:  \n",userPrinfo[i].uid);
+		printf("comm:%s\n",userPrinfo[i].comm);
+		printf("\n");
 	}
 	printf("num of processes: %ld\n", t);
 	return 0;
