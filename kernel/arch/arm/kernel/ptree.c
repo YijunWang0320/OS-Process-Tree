@@ -19,7 +19,7 @@ void doCopy(struct prinfo *tempBuf, struct task_struct *p, struct task_struct *p
 		realp = p->parent;
 		chp = list_entry(p->children.next, struct task_struct, sibling);
 		tempBuf[i].first_child_pid = chp->pid;
-
+		printk("tempBuf[i].first_child_pid = chp->pid: %ld \n", chp->pid);//test
 		if (&realp->children == p->sibling.next)
 			tempBuf[i].next_sibling_pid = 0;
 		else {
