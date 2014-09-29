@@ -5,10 +5,42 @@
 #include <linux/list.h>
 #include <linux/string.h>
 #include <linux/uaccess.h>
-void doCopy(struct prinfo *tempBuf,struct task_struct *p,struct task_struct *par,struct task_struct *sib,int i)
+
+void doCopy(struct prinfo *tempBuf, struct task_struct *p, struct task_struct *par, int i)
 {
-	tempBuf[i].pid=p->pid;
-	if(p->parent->pid!=p->pid)
+	tempBuf[i].pid = p->pid;
+	tempBuf[i].parent_pid = p->parent->pid;
+	tempBuf[i].state = p->state;
+	strcpy(tempBuf[i].comm, p->comm);
+	tempBuf[i].uid = p->real_cred->uid;
+	if( p == par) {
+		struct task_struct *chp, *realp;
+
+		realp = p->parent;
+		chp = list_entry(p->children.next, struct task_struct, sibling);
+		tempBuf[i].first_child_pid = chp->pid;
+		printk("tempBuf[i].first_child_pid = chp->pid: %ld \n", chp->pid);//test
+		if (&realp->children == p->sibling.next)
+			tempBuf[i].next_sibling_pid = 0;
+		else {
+			struct task_struct *sib;
+
+			sib = list_entry(p->sibling.next, struct task_struct, sibling);
+			tempBuf[i].next_sibling_pid = sib->pid;
+		}
+	} else if (list_empty(&p->children)) {
+		tempBuf[i].first_child_pid = 0;
+		if (&par->children == p->sibling.next)
+			tempBuf[i].next_sibling_pid = 0;
+		else {
+			struct task_struct *sib;
+
+			sib = list_entry(p->sibling.next, struct task_struct, sibling);
+			tempBuf[i].next_sibling_pid = sib->pid;
+		}
+	}
+	/*tempBuf[i].pid = p->pid;
+	if(p->parent->pid != p->pid)
 		tempBuf[i].parent_pid=par->pid;
 	else
 		tempBuf[i].parent_pid=0;
@@ -24,8 +56,9 @@ void doCopy(struct prinfo *tempBuf,struct task_struct *p,struct task_struct *par
 	tempBuf[i].uid=p->real_cred->uid;
 	strcpy(&tempBuf[i].comm,&p->comm);
 	return;
-
+	*/
 }
+
 asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 {
 	long i = 0;
@@ -48,7 +81,7 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 
 	do {
 		if (p == par) {
-			doCopy(tempBuf,p,par,list_entry(sib->next,struct task_struct,sibling),i);
+			doCopy(tempBuf,p,par,i);
 			i ++;
 			printk("[%d] %s, parent:%s\n", p->pid, p->comm, p->parent->comm);
 			par = p->parent;
@@ -59,7 +92,7 @@ asmlinkage long sys_ptree(struct prinfo *buf, int *nr)
 			ch = &p->children;
 			sib = &p->sibling;
 		} else if (list_empty(ch)) {
-			doCopy(tempBuf,p,par,list_entry(sib,struct task_struct,sibling),i);
+			doCopy(tempBuf,p,par,i);
 			i ++;
 			printk("[%d] %s, parent:%s\n", p->pid, p->comm, p->parent->comm);
 			if (&par->children == p->sibling.next)
